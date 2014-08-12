@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    .node {
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+
+    .link {
+      stroke: #999;
+      stroke-opacity: .6;
+    }
+    .blue {color: #1f77b4;}
+    .green {color: #2ca02c;}
+    .orange {color: #ff7f0e;}
+    .red {color: #d62728;}
+
+  </style>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>  
+  <h1>Quick Data Check</h1>
+  <p>This network graph provides "just in time" data checking.</br>
+  Fed from a live google spreadsheet, the data is formated for a network graph and displayed, with the nodes colored by an attribute field chosed by the <a _target="blank" href="https://github.com/mbostock/d3/wiki/Ordinal-Scales#category10">d3.js 10 color scale</a>.
+  <p>When there are no more red nodes, the graph is ready to be visualized in <a href="http://gephi.org">Gephi</a>.</p>
+  <p>Mouse over a node to see the person's name.</p>
+  <p>If it hasn't loaded yet, be patient, this is <b>live</b> data.  If you have any suggestions for speading up the process, send me a pull request.</p>
+  <script>
+    var width = 800;
+    var height = 800;
+
+    var color = d3.scale.category10();
+
+    var force = d3.layout.force()
+        .charge(-30)
+        .linkDistance(5)
+        .size([width, height]);
+
+    var svg = d3.select("body").append("svg")
+      .attr('width',width)
+      .attr('height',height);
+
+    d3.json("../data", function(error, graph) {
+      force
+          .nodes(graph.nodes)
+          .links(graph.links)
+          .start();
+
+      var link = svg.selectAll(".link")
+          .data(graph.links)
+        .enter().append("line")
+          .attr("class", "link")
+          .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+      var node = svg.selectAll(".node")
+          .data(graph.nodes)
+        .enter().append("circle")
+          .attr("class", "node")
+          .attr("r", 5)
+          .style("fill", function(d) { return color(d.attribute); })
+          .call(force.drag);
+
+      node.append("title")
+          .text(function(d) { return d.label + ": " + d.attribute; });
+
+      force.on("tick", function() {
+        link.attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+
+        node.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+      });
+    });
+  </script>
+</body>
